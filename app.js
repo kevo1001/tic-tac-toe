@@ -143,8 +143,46 @@
   function cpuPickMove() {
     const moves = availableMoves(board);
     if (moves.length === 0) return null;
-    const r = Math.floor(Math.random() * moves.length);
-    return moves[r];
+
+    // Smart-but-beatable CPU:
+    // 1) take a winning move if available
+    // 2) block an immediate loss
+    // 3) otherwise prefer strong positions (center, corners), with occasional randomness
+
+    function findImmediateMove(forPlayer) {
+      for (const idx of moves) {
+        const b2 = board.slice();
+        b2[idx] = forPlayer;
+        if (winnerFor(b2)?.winner === forPlayer) return idx;
+      }
+      return null;
+    }
+
+    const winNow = findImmediateMove(cpu);
+    if (winNow !== null) return winNow;
+
+    const blockNow = findImmediateMove(you);
+    if (blockNow !== null) {
+      // Rarely make a mistake so it's not too strong.
+      if (Math.random() < 0.12 && moves.length > 1) {
+        return moves[Math.floor(Math.random() * moves.length)];
+      }
+      return blockNow;
+    }
+
+    // Prefer center
+    if (board[4] === null && Math.random() < 0.75) return 4;
+
+    // Prefer corners, then edges
+    const corners = [0, 2, 6, 8].filter((i) => board[i] === null);
+    const edges = [1, 3, 5, 7].filter((i) => board[i] === null);
+
+    if (corners.length && Math.random() < 0.75) {
+      return corners[Math.floor(Math.random() * corners.length)];
+    }
+
+    const pool = corners.length ? corners : edges.length ? edges : moves;
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   function cpuMove() {
