@@ -4,6 +4,40 @@
     O: "O",
   };
 
+  let audioCtx;
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  function playBeep(freq, duration, type = "sine", gain = 0.15) {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    osc.connect(g);
+    g.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+    g.gain.setValueAtTime(gain, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  function playClickSound() {
+    playBeep(660, 0.09, "square", 0.12);
+  }
+
+  function playCpuSound() {
+    playBeep(330, 0.12, "sine", 0.12);
+  }
+
   const winningLines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -200,6 +234,8 @@
       makeMove(idx, cpu);
       isCpuThinking = false;
 
+      playCpuSound();
+
       if (maybeFinish()) return;
 
       switchTurn();
@@ -213,6 +249,8 @@
 
     const ok = makeMove(index, you);
     if (!ok) return;
+
+    playClickSound();
 
     if (maybeFinish()) return;
 
